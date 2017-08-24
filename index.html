@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	    <meta charset="utf-8" />
+	    <title>Gamedev Canvas Workshop</title>
+	    <style>
+	    	* { padding: 0; margin: 0; }
+	    	canvas { background: #eef; display: block; margin: 0 auto; }
+	    </style>
+	    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	    <!-- Bootstrap CSS -->
+	    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+	</head>
+	<body class=''>
+		<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="exampleModalLabel">You Won!</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <div class="modal-body">
+		      +1 EXP
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" id="modalbutton" class="btn btn-success" data-dismiss="modal">Continue?</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+		
+		<form>
+		<fieldset>
+			<legend>Set Your Preferences</legend>
+			
+			Set Your Lives:  <label id="label1">3  </label><br><input id="livestock" type="range" value=3 min=1 max=5 oninput="document.getElementById('label1').innerHTML=document.getElementById('livestock').value;"></input><br>
+
+			Choose How Many Columns of Bricks: <label id="label2">6
+			</label><br><input id="columns" type="range" value="6" min=1 max=6 oninput="document.getElementById('label2').innerHTML=document.getElementById('columns').value;"></input><br>
+
+			Choose How Many Rows of Bricks: <label id="label3">6
+				</label><br><input id="rows" type="range" value="6" min=1 max=6 oninput="document.getElementById('label3').innerHTML=document.getElementById('rows').value;"></input><br>
+			Set the Brick Layer: <label id="label4">2
+				</label><br><input id="layers" type="range" value="2" min=1 max=2 oninput="document.getElementById('label4').innerHTML=document.getElementById('layers').value;"></input><br>
+		</fieldset>
+		</form>
+
+		<canvas id="myCanvas" width="500" height="300"></canvas><br>
+		<button id="startbutton" type="button" class="btn btn-success">Start Game</button> || 
+		
+	<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+	<script>
+
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		var paddleHeight = 10;
+		var paddleWidth = 100;
+		var ballRadius = 8;
+		var x = canvas.width/2;
+		var y = canvas.height-paddleHeight-ballRadius;
+		var dx = 2;
+		var dy = -2;
+		var color = "#0095DD";
+		var gamePaused = false;
+
+		function drawBall() {
+		    ctx.beginPath();
+		    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+		    ctx.fillStyle = color;
+		    ctx.fill();
+		    ctx.closePath();
+		}
+		
+		var paddleX = (canvas.width-paddleWidth)/2;
+
+		function drawPaddle() {
+		    ctx.beginPath();
+		    ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+		    ctx.fillStyle = "#0095DD";
+		    ctx.fill();
+
+		    ctx.closePath();
+		}
+
+
+
+		var rightPressed = false;
+		var leftPressed = false;
+		
+
+
+
+		
+		var brickRowCount = document.getElementById("rows").value;
+		var brickColumnCount = document.getElementById("columns").value;
+		var brickWidth = 75;
+		var brickHeight = 20;
+		var brickPadding = 10;
+		var brickOffsetTop = 30;
+		var brickOffsetLeft = (canvas.width-brickColumnCount*(brickWidth+brickPadding))/2;
+		var brickcolor = "#0095DD";
+		var bricks = [];
+		var bricklives = 2;
+
+
+		function drawBricks() {
+			brickOffsetLeft = (canvas.width-brickColumnCount*(brickWidth+brickPadding))/2;
+		    for(c=0; c<brickColumnCount; c++) {
+		        for(r=0; r<brickRowCount; r++) {
+		            if(bricks[c][r].status >= 1) {
+		                var brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
+		                var brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
+		                bricks[c][r].x = brickX;
+		                bricks[c][r].y = brickY;
+		                ctx.beginPath();
+		                ctx.rect(brickX, brickY, brickWidth, brickHeight);
+		                ctx.fillStyle = bricks[c][r].color;
+		                ctx.fill();
+		                ctx.closePath();
+		            }
+		        }
+		    }
+		}	
+		var score = 0;
+		function drawScore() {
+		    ctx.font = "16px Arial";
+		    ctx.fillStyle = "#0095DD";
+		    ctx.fillText("Score: "+score, 5, 20);
+		}
+		function drawLives() {
+			
+		    ctx.font = "16px Arial";
+		    ctx.fillStyle = "#0095DD";
+		    ctx.fillText("Lives: "+lives, canvas.width-65, 20);
+		}
+
+		var gamestatus='||   Paused';
+		function drawPause() {
+		    ctx.font = "16px Arial";
+		    ctx.fillStyle = "#0095DD";
+		    ctx.fillText(gamestatus, canvas.width-90, canvas.height-20);
+		}
+		
+		function draw() {
+
+		    ctx.clearRect(0, 0, canvas.width, canvas.height);
+		    drawBricks();
+		    drawBall();
+		    drawPaddle();
+		    drawScore();
+		    drawLives();
+		    x += dx;
+		    y += dy;
+
+
+		   if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
+			    dx = -dx;
+	
+		
+			}
+
+			if(y + dy < ballRadius) {
+			    dy = -dy;
+			} else if(y + dy > canvas.height-ballRadius-paddleHeight/2) {
+			    if(x > paddleX && x < paddleX + paddleWidth) {
+			        dy = -dy;
+			    }
+			    else {
+			        
+			     	gamestatus=``;
+			 		pauseGame();
+			 		lives--;
+			 		$('#exampleModalLabel').html(`You have ${lives} lives left!`);
+			        $('#myModal').modal('show');
+			        $('body').append(`<button id="continuebutton" type="button" class="btn btn-success">Continue?</button>`);
+			        $("#startbutton").attr("disabled",'true');
+			       
+					if(lives<=0) {
+					    $('#exampleModalLabel').html('Game Over');
+					    $('#continuebutton').remove();
+					    $('body').append(`<button id="endbutton" type="button" class="btn btn-success">Play Again?</button>`);
+			        	$('#myModal').modal('show');
+						
+					}
+					else {
+			        	
+					    x = canvas.width/2;
+					    y = canvas.height-30;
+					    dx = 2;
+					    dy = -2;
+					    paddleX = (canvas.width-paddleWidth)/2;
+					}
+			    }
+			}
+			if(rightPressed && paddleX < canvas.width-paddleWidth) {
+			    paddleX += 2;
+			}
+			else if(leftPressed && paddleX > 0) {
+			    paddleX -= 2;
+			}
+			collisionDetection();
+		}
+
+		document.addEventListener("keydown", keyDownHandler, false);
+		document.addEventListener("keyup", keyUpHandler, false);
+		document.addEventListener("mousemove", mouseMoveHandler, false);
+		$(window).on("keydown",(e)=>{
+			keyDown(e);
+		});
+		$(document).on("click",'#continuebutton, #modalbutton',()=>{
+			$('#continuebutton').remove();
+			x = canvas.width/2;
+			y = canvas.height-paddleHeight-ballRadius;
+			dx = 2;
+			dy = -2;
+			rightPressed = false;
+			leftPressed = false;
+			gamePaused = false;
+			gamestatus='||   Paused';
+			game = setInterval(draw,10);
+		});
+
+		$(document).on("click",'#endbutton,#button',()=>{
+
+			x = canvas.width/2;
+			y = canvas.height-paddleHeight-ballRadius;
+			dx = 2;
+			dy = -2;
+			score=0;
+
+			brickRowCount = document.getElementById("rows").value;
+			brickColumnCount = document.getElementById("columns").value;
+			bricklives = document.getElementById('layers').value;
+			lives=document.getElementById("livestock").value;
+
+			$('#endbutton').remove();
+			bricks = [];
+		
+				for(c=0; c<brickColumnCount; c++) {
+				    bricks[c] = [];
+				    for(r=0; r<brickRowCount; r++) {
+				        bricks[c][r] = { x: 0, y: 0, status:bricklives,color:brickcolor};
+				    }
+				}
+			rightPressed = false;
+			leftPressed = false;
+			gamePaused = false;
+			gamestatus='||   Paused';
+			game = setInterval(draw,10);
+
+		});
+	
+		document.getElementById("startbutton").addEventListener("click",()=>{
+			bricks=[];
+			bricklives = document.getElementById('layers').value;
+			lives = document.getElementById("livestock").value;
+			brickRowCount = document.getElementById("rows").value;
+			brickColumnCount = document.getElementById("columns").value;
+			for(c=0; c<brickColumnCount; c++) {
+			    bricks[c] = [];
+			    for(r=0; r<brickRowCount; r++) {
+			        bricks[c][r] = { x: 0, y: 0, status:bricklives,color:brickcolor};
+			    }
+			}
+			
+			
+			$("#startbutton").attr("disabled",'true');
+			game = setInterval(draw, 10);
+		});
+			
+		
+		function mouseMoveHandler(e) {
+		    var relativeX = e.clientX - canvas.offsetLeft;
+		    var relativeY = e.clientY - canvas.offsetTop;
+		    if(relativeX > 0+paddleWidth/2 && relativeX < canvas.width-paddleWidth/2 && relativeY <canvas.height) {
+		        paddleX = relativeX-paddleWidth/2;
+		    }
+		}
+		function keyDown(e) {
+		  if (e.keyCode == 80) {
+		  	pauseGame(e);
+		  }
+		}
+		function pauseGame(e) {
+		
+		  if (!gamePaused) {
+		    game = clearInterval(game);
+		    gamePaused = true;
+			
+		  } else if (gamePaused) {
+		    game = setInterval(draw, 10);
+		    gamePaused = false;
+		  }
+		  drawPause();
+		}
+		function keyDownHandler(e) {
+		    if(e.keyCode == 39) {
+		        rightPressed = true;
+		    }
+		    else if(e.keyCode == 37) {
+		        leftPressed = true;
+		    }
+		}
+
+		function keyUpHandler(e) {
+		    if(e.keyCode == 39) {
+		        rightPressed = false;
+		    }
+		    else if(e.keyCode == 37) {
+		        leftPressed = false;
+		    }
+		}
+
+		
+
+		function collisionDetection() {
+		    for(c=0; c<brickColumnCount; c++) {
+		        for(r=0; r<brickRowCount; r++) {
+		            var b = bricks[c][r];
+			            if(b.status >= 1) {
+			                if(x >= b.x && x <= b.x+brickWidth && y+ballRadius >= b.y && y-ballRadius <= b.y+brickHeight) {
+			                    dy = -dy;
+			                    color=getRandomColor();
+			                    b.color=getRandomColor();
+			                    b.status -= 1;
+			                    score+=1;
+			                    if(score == brickRowCount*bricklives*brickColumnCount) {
+			                    	gamestatus='';
+			 						pauseGame();
+
+			 							
+			 						$('.modal-body').html('+10 EXP');
+			 						$('#exampleModalLabel').html('You Won!');
+			                        $('#myModal').modal('show');
+			  						$('#button').show();
+			  						$('body').append(`<button id="endbutton" type="button" class="btn btn-success">Play Again?</button>`);
+			  						$("#startbutton").attr("disabled",'true');
+			                    }
+			                }
+			            }
+		        }
+		    }
+		}
+		function getRandomColor() {
+		  var letters = '0123456789ABCDEF';
+		  var color = '#';
+		  for (var i = 0; i < 6; i++) {
+		    color += letters[Math.floor(Math.random() * 16)];
+		  }
+		  return color;
+		}
+	</script>
+
+	</body>
+</html>
